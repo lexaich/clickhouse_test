@@ -1,7 +1,7 @@
 import datetime
 import logging
 from datastore import Datastore
-
+ 
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
