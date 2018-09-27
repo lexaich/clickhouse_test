@@ -15,14 +15,10 @@ class ClickhouseDatastore(ElasticDatastore):
     def __init__(self):
         super().__init__()
         self.client = Client('localhost')
-        self.elastic = Elasticsearch([self.es_url], maxsize=self.es_maxsize,
-                                     timeout=30, max_retries=10, retry_on_timeout=True)
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_token_transaction(date Date, tx_hash String, block_id Int32, token String, valid UInt8[Boolean], raw_value Float23, to String, from String, method String ) ENGINE = MergeTree() ORDER BY (tx_hash)')
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_token_price (date Date, token String, BTC UInt8, USD UInt8, ETH UInt8, USD_cmc UInt8, marketCap Int32, timestamp DateTime) ENGINE = MergeTree() ORDER BY (timestamp)')
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_contract (date Date, address String, parent_transaction String, blockNumber Int32, abi Array(String), bytecode Uint32, decimals Int32, owner String, standards Array(Int32), token_name String, token_owner String, token_symbol String, cc_sym String, cmc_id Int32) ENGINE = MergeTree() ORDER BY (address)')
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_internal_transaction (date Date, blockNumber Int32, hash String, from String, to String, value Float32, input String, output String, gas String, gasUsed String, blockHash String, transactionHash String, transactionPosition Int32, subtraces Int32, traceAddress Array(Int32), type String, callType String, address String, code String, init String, refunedAddress String, error String, parent_error String, balance String ) ENGINE = MergeTree() ORDER BY (hasр)')
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_miner_transaction (date Date, blockNumber Int23, author String, blockHash String, rewardType String, subtraces Int32, value Foat23 ) ENGINE = MergeTree() ORDER BY (blockHash)')
-        self.client.execute('CREATE TABLE IF EXISTS ethereum_block (date Date, number Int32, timestamp DateTime ) ENGINE = MergeTree() ORDER BY (number)')
+
+        self.client.execute('CREATE TABLE IF NOT EXISTS ethereum_transaction (date Date, transactions Array(String), number Int32, timestamp DateTime,gasLimit Int32, gasUsed Int32, size Int32, transactionCount Int32, txValueSum Int32 ) ENGINE = MergeTree() ORDER BY (date)')
+
+        self.client.execute('CREATE TABLE IF NOT EXISTS ethereum_block (date Date, number Int32, timestamp DateTime, to String, from String, hash String ) ENGINE = MergeTree() ORDER BY (date,hash)')
 
     @classmethod
     def config(cls, es_url, es_maxsize):
@@ -50,19 +46,7 @@ class ClickhouseDatastore(ElasticDatastore):
                 {"_index": self.TX_INDEX_NAME, "_type": "tx", "_id": tx["hash"], "_source": tx}
             )
             tx_hashes.append(tx["hash"])
-            """
-{
-    "_index":'name',
-    "_type":'tx',
-    "_id":'hash',
-    "_source":{
-        "blockNumber":0,
-        "blockTimestamp":1537768168,
-        "value":1.1,
-    }
-}
-INSERT INTO ethereum_block (number,timestamp) VALUES ({"number":source['blockNumber'],"timestamp":source['blockTimestamp']})
-"""
+
         block["transactions"] = tx_hashes
         block["number"] = block_nb
         block["timestamp"] = block_timestamp
@@ -75,24 +59,6 @@ INSERT INTO ethereum_block (number,timestamp) VALUES ({"number":source['blockNum
         self.actions.append(
             {"_index": self.B_INDEX_NAME, "_type": "b", "_id": block_nb, "_source": block}
         )
-"""
-{
-    "_index":'name',
-    "_type":'tx',
-    "_id":'hash',
-    "_source":{
-        "transactions":["hash","hash"],
-        "number":0,
-        "timestamp":1537768168,
-        "gasLimit":5,
-        "gasUsed":3,
-        "size":255,
-        "transactionCount":23,
-        "txValueSum":112
-    }
-}
-INSERT INTO ethereum_internal_transaction (blockNumber,gas,gasUsed,) VALUES ({"number":source['number'],"gas":source['gasLimit'],"gasUsed":source['gasUsed']})
-"""
 
 
     def save(self):
@@ -101,7 +67,21 @@ INSERT INTO ethereum_internal_transaction (blockNumber,gas,gasUsed,) VALUES ({"n
 
         if self.actions:
             try:
-                self.client.execute('INSERT INTO ',self.actions)
+                out_b = []
+                out_tx = []
+                for item in self.action:
+                    if item['_type'] == 'b':
+                        out_b.append(item['_source'])
+                    if item['_type'] == 'tx':
+                        out_tx.append(item['_source'])
+                    
+                self.client.execute('INSERT INTO ethereum_internal_transaction (transactions,number,timestamp,gasLimit,gasUsed,size,transactionCount,txValueSum) VALUES,' out_tx )
+
+                self.client.execute('INSERT INTO ethereum_block (number,timestamp,to,from,hash) VALUES,' out_b)
+                # self.client.execute('INSERT INTO ethereum_internal_transaction (transactions,number,timestamp,gasLimit,gasUsed,size,transactionCount,txValueSum) VALUES,'[{'transactions':source["transactions"],'number':source["number"],'timestamp':source["timestamp"],'gasLimit':source["gasLimit"],'gasUsed':source["gasUsed"],'size':source["size"],'transactionCount':source["transactionCount"],'txValueSum':source["txValueSum"]}] )
+
+                # self.client.execute('INSERT INTO ethereum_block (number,timestamp,to,from,hash) VALUES,' [{'number':source['number'],'timestamp':source['timestamp'],'to':source['to'],'from':source['from'],'hash':source['hash']}])
+
                 return "{} blocks and {} transactions indexed".format(
                     nb_blocks, nb_txs
                 )
