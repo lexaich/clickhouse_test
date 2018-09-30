@@ -1,3 +1,11 @@
+# Test task
+
+Run this to validate task:
+```
+./ethdrain.py -s 5000000 -e 5000001
+```
+Transactions with "creates" field will appear in database if everything is done correctly
+
 # Ethdrain
 
 Python 3 script allowing to copy and index the Ethereum blockchain in an efficient way to ElasticSearch by connecting to a local node supporting RPC (tried with Parity).
