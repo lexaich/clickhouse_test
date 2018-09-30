@@ -8,7 +8,7 @@ import requests
 import aiohttp
 
 from elasticsearch import exceptions as es_exceptions
-from elasticdatastore import ElasticDatastore
+from clickhouse_datastore import ClickhouseDatastore as ElasticDatastore
 
 logging.basicConfig(filename='error_blocks.log', level=logging.ERROR)
 
