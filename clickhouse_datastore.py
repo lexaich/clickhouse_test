@@ -22,7 +22,7 @@ class ClickhouseDatastore(ElasticDatastore):
         self.schema_tx = {
             "blockNumber": "Int32",
             "from": "String",
-            "to": "String",
+            "to": "Nullable(String)",
             "hash": "String"
         }
         schema_block_string = ", ".join(["{} {}".format(a, b) for a, b in self.schema_block.items()])
@@ -41,7 +41,7 @@ class ClickhouseDatastore(ElasticDatastore):
                 for item in self.actions:
                     if item['_type'] == 'b':
                         out_b.append(item['_source'])
-                    if (item['_type'] == 'tx') and (item["_source"]["to"]):
+                    if (item['_type'] == 'tx'):
                         out_tx.append(item['_source'])
                 
                 schema_block_string = ",".join(self.schema_block.keys())
