@@ -4,6 +4,7 @@ from datastore import Datastore
 
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
+import json
 
 class ElasticDatastore(Datastore):
 
@@ -20,8 +21,8 @@ class ElasticDatastore(Datastore):
         cls.es_url = es_url
         cls.es_maxsize = es_maxsize
 
-
     def extract(self, rpc_block):
+        rpc_block = json.loads(rpc_block)
         block = rpc_block["result"]
 
         transactions = block["transactions"]

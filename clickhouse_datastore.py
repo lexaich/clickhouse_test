@@ -41,7 +41,7 @@ class ClickhouseDatastore(ElasticDatastore):
                 for item in self.actions:
                     if item['_type'] == 'b':
                         out_b.append(item['_source'])
-                    if (item['_type'] == 'tx') and (item["_source"][""]):
+                    if (item['_type'] == 'tx') and (item["_source"]["to"]):
                         out_tx.append(item['_source'])
                 
                 schema_block_string = ",".join(self.schema_block.keys())

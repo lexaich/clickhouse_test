@@ -57,7 +57,7 @@ class Ethdrain:
                                     data=Ethdrain.make_request(block_nb),
                                     headers={"content-type": "application/json"}) as response:
                 for data_store in self.data_stores:
-                    data_store.extract(await response.json())
+                    data_store.extract(await response.text())
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as exception:
             logging.error("block: " + str(block_nb))
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Elasticsearch default url
     ES_URL = "http://localhost:9200"
     # Ethereum RPC endpoint
-    ETH_URL = "http://localhost:8545"
+    ETH_URL = "https://mainnet.infura.io"
     # Size of multiprocessing Pool processing the chunks
     POOL_SIZE = mp.cpu_count() + 2
 
